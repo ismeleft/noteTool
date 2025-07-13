@@ -50,16 +50,23 @@ export const Canvas: React.FC = () => {
   };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
+    const target = e.target as HTMLElement | SVGElement;
+    
+    const getClassName = (element: HTMLElement | SVGElement): string => {
+      if ('className' in element) {
+        if (typeof element.className === 'string') {
+          return element.className;
+        } else if (element.className && 'baseVal' in element.className) {
+          return (element.className as { baseVal: string }).baseVal;
+        }
+      }
+      return '';
+    };
+    
+    const className = getClassName(target);
     const isCanvasOrBackground = 
       target === e.currentTarget || 
-      (target.className && 
-       typeof target.className === 'string' && 
-       target.className.includes('pointer-events-none')) ||
-      (target.className && 
-       typeof target.className === 'object' && 
-       target.className.baseVal && 
-       target.className.baseVal.includes('pointer-events-none'));
+      className.includes('pointer-events-none');
     
     if (isCanvasOrBackground) {
       actions.selectNote(null);
@@ -72,16 +79,23 @@ export const Canvas: React.FC = () => {
 
   const handleCanvasDoubleClick = (e: React.MouseEvent) => {
     // 檢查是否直接點擊畫布或背景格線
-    const target = e.target as HTMLElement;
+    const target = e.target as HTMLElement | SVGElement;
+    
+    const getClassName = (element: HTMLElement | SVGElement): string => {
+      if ('className' in element) {
+        if (typeof element.className === 'string') {
+          return element.className;
+        } else if (element.className && 'baseVal' in element.className) {
+          return (element.className as { baseVal: string }).baseVal;
+        }
+      }
+      return '';
+    };
+    
+    const className = getClassName(target);
     const isCanvasOrBackground = 
       target === e.currentTarget || 
-      (target.className && 
-       typeof target.className === 'string' && 
-       target.className.includes('pointer-events-none')) ||
-      (target.className && 
-       typeof target.className === 'object' && 
-       target.className.baseVal && 
-       target.className.baseVal.includes('pointer-events-none'));
+      className.includes('pointer-events-none');
     
     if (isCanvasOrBackground) {
       const rect = e.currentTarget.getBoundingClientRect();
