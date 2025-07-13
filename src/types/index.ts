@@ -24,6 +24,11 @@ export interface CanvasState {
   selectedNoteId: string | null;
   isConnecting: boolean;
   connectingFromId: string | null;
+  zoom: number;
+  panOffset: {
+    x: number;
+    y: number;
+  };
 }
 
 export const STICKY_NOTE_COLORS = [

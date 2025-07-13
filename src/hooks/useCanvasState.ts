@@ -12,6 +12,8 @@ export const useCanvasState = () => {
     selectedNoteId: null,
     isConnecting: false,
     connectingFromId: null,
+    zoom: 1,
+    panOffset: { x: 0, y: 0 },
   });
 
   // 載入初始資料
@@ -179,6 +181,8 @@ export const useCanvasState = () => {
       selectedNoteId: null,
       isConnecting: false,
       connectingFromId: null,
+      zoom: 1,
+      panOffset: { x: 0, y: 0 },
     });
   }, []);
 
@@ -202,6 +206,8 @@ export const useCanvasState = () => {
           selectedNoteId: null,
           isConnecting: false,
           connectingFromId: null,
+          zoom: 1,
+          panOffset: { x: 0, y: 0 },
         }));
         return true;
       }
@@ -211,6 +217,78 @@ export const useCanvasState = () => {
       return false;
     }
   }, []);
+
+  // 縮放功能
+  const zoomIn = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      zoom: Math.min(prev.zoom * 1.2, 3), // 最大3倍
+    }));
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      zoom: Math.max(prev.zoom / 1.2, 0.1), // 最小0.1倍
+    }));
+  }, []);
+
+  const resetZoom = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      zoom: 1,
+      panOffset: { x: 0, y: 0 },
+    }));
+  }, []);
+
+  const setZoom = useCallback((zoom: number) => {
+    setState(prev => ({
+      ...prev,
+      zoom: Math.max(0.1, Math.min(3, zoom)),
+    }));
+  }, []);
+
+  const setPanOffset = useCallback((offset: { x: number; y: number }) => {
+    setState(prev => ({
+      ...prev,
+      panOffset: offset,
+    }));
+  }, []);
+
+  const fitToView = useCallback((containerWidth: number, containerHeight: number) => {
+    if (state.notes.length === 0) return;
+
+    // 計算所有便條紙的邊界
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    state.notes.forEach(note => {
+      minX = Math.min(minX, note.position.x);
+      minY = Math.min(minY, note.position.y);
+      maxX = Math.max(maxX, note.position.x + note.size.width);
+      maxY = Math.max(maxY, note.position.y + note.size.height);
+    });
+
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+    
+    // 加上邊距
+    const padding = 100;
+    const scaleX = (containerWidth - padding * 2) / contentWidth;
+    const scaleY = (containerHeight - padding * 2) / contentHeight;
+    const newZoom = Math.min(scaleX, scaleY, 1); // 不超過100%
+
+    // 計算居中偏移
+    const centerX = (containerWidth - contentWidth * newZoom) / 2;
+    const centerY = (containerHeight - contentHeight * newZoom) / 2;
+    const offsetX = centerX - minX * newZoom;
+    const offsetY = centerY - minY * newZoom;
+
+    setState(prev => ({
+      ...prev,
+      zoom: newZoom,
+      panOffset: { x: offsetX, y: offsetY },
+    }));
+  }, [state.notes]);
 
   return {
     state,
@@ -227,6 +305,12 @@ export const useCanvasState = () => {
       clearAllData,
       exportData,
       importData,
+      zoomIn,
+      zoomOut,
+      resetZoom,
+      setZoom,
+      setPanOffset,
+      fitToView,
     },
   };
 };

@@ -26,11 +26,13 @@ export const ConnectionLayer: React.FC<ConnectionLayerProps> = ({
 
   return (
     <svg 
-      className="absolute inset-0 pointer-events-none"
+      className="absolute pointer-events-none"
       style={{ 
         zIndex: 1,
-        width: '100vw',
-        height: '100vh'
+        left: 0,
+        top: 0,
+        width: '200vw',
+        height: '200vh'
       }}
     >
       {connections.map(connection => {
