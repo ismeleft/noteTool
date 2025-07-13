@@ -176,6 +176,18 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
     }
   };
 
+  // 處理中文輸入法組字
+  const [isComposing, setIsComposing] = useState(false);
+  
+  const handleCompositionStart = () => {
+    setIsComposing(true);
+  };
+  
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLTextAreaElement>) => {
+    setIsComposing(false);
+    setContent(e.currentTarget.value);
+  };
+
   const handleColorChange = (color: string) => {
     onUpdate({ color });
   };
@@ -276,7 +288,13 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
             <textarea
               ref={textareaRef}
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => {
+                if (!isComposing) {
+                  setContent(e.target.value);
+                }
+              }}
+              onCompositionStart={handleCompositionStart}
+              onCompositionEnd={handleCompositionEnd}
               onBlur={handleContentSubmit}
               onKeyDown={handleKeyDown}
               onMouseDown={(e) => e.stopPropagation()}
