@@ -24,3 +24,26 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* 優化觸控裝置的輸入體驗 */
+@media (pointer: coarse) {
+  textarea {
+    font-size: 16px !important; /* 防止 iOS Safari 縮放 */
+    transform: translateZ(0); /* 啟用硬體加速 */
+  }
+  
+  /* 防止觸控拖拽時的文字選取 */
+  .touch-none {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* 優化觸控裝置的按鈕 */
+  button {
+    touch-action: manipulation;
+  }
+}

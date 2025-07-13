@@ -77,6 +77,12 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isEditing) return;
     if (isConnecting) return;
+    
+    // 檢查是否點擊在 textarea 或輸入區域
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+      return;
+    }
 
     const rect = noteRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -200,7 +206,12 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       onClick={handleClick}
-      onTouchEnd={handleTouchTap}
+      onTouchEnd={(e) => {
+        // 只有在不是編輯模式時才處理雙擊
+        if (!isEditing) {
+          handleTouchTap();
+        }
+      }}
     >
       <div
         className="w-full h-full rounded-lg shadow-xl border border-white/50 relative backdrop-blur-sm"
@@ -270,15 +281,26 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
               onKeyDown={handleKeyDown}
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
               className={`w-full h-full resize-none border-none outline-none bg-transparent text-gray-700 ${isTouchDevice ? 'text-base' : 'text-sm'}`}
               placeholder={isTouchDevice ? "點擊編輯內容..." : "輸入內容... (Ctrl+Enter 儲存, Esc 取消)"}
+              style={{ touchAction: 'manipulation' }}
             />
           ) : (
             <div
               className={`w-full h-full cursor-text whitespace-pre-wrap text-gray-700 ${isTouchDevice ? 'text-base' : 'text-sm'}`}
               onDoubleClick={handleDoubleClick}
               onMouseDown={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+                // 處理雙擊編輯
+                const now = Date.now();
+                if (now - lastTap < 300) {
+                  setIsEditing(true);
+                }
+                setLastTap(now);
+              }}
             >
               {note.content || (isTouchDevice ? "點擊兩次編輯內容..." : "雙擊編輯內容...")}
             </div>
