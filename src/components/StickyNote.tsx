@@ -206,7 +206,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       onClick={handleClick}
-      onTouchEnd={(e) => {
+      onTouchEnd={() => {
         // 只有在不是編輯模式時才處理雙擊
         if (!isEditing) {
           handleTouchTap();
