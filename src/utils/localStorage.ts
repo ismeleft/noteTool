@@ -2,7 +2,7 @@ import { CanvasState } from '@/types';
 
 const STORAGE_KEY = 'sticky-notes-app-data';
 
-export const saveToLocalStorage = (state: Omit<CanvasState, 'selectedNoteId' | 'isConnecting' | 'connectingFromId'>) => {
+export const saveToLocalStorage = (state: Pick<CanvasState, 'notes' | 'connections'>) => {
   try {
     const dataToSave = {
       notes: state.notes,

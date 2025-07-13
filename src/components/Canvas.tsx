@@ -8,6 +8,8 @@ import { useCanvasState } from "@/hooks/useCanvasState";
 export const Canvas: React.FC = () => {
   const { state, actions } = useCanvasState();
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isHelpOpen, setIsHelpOpen] = React.useState(false);
 
   // 將鼠標座標轉換為畫布座標
   const screenToCanvas = (screenX: number, screenY: number) => {
@@ -142,8 +144,8 @@ export const Canvas: React.FC = () => {
 
   return (
     <div className="w-full h-full relative bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* 工具列 */}
-      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2 z-20 flex flex-wrap gap-2 border border-white/20">
+      {/* 桌面版工具列 */}
+      <div className="hidden lg:flex absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2 z-20 flex-wrap gap-2 border border-white/20">
         <button
           onClick={() => actions.addNote({ x: 100, y: 100 })}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -198,7 +200,7 @@ export const Canvas: React.FC = () => {
           >
             🔍－
           </button>
-          <div className="px-2 py-2 bg-gray-500 rounded text-sm min-w-[3rem] text-center">
+          <div className="px-2 py-2 bg-gray-100 rounded text-sm min-w-[3rem] text-center">
             {Math.round(state.zoom * 100)}%
           </div>
           <button
@@ -230,8 +232,136 @@ export const Canvas: React.FC = () => {
         </div>
       </div>
 
-      {/* 使用說明 */}
-      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-3 z-20 text-sm max-w-xs border border-white/20">
+      {/* 行動版選單按鈕 */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="lg:hidden absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-3 z-30 border border-white/20"
+      >
+        <div className="w-5 h-5 flex flex-col justify-center space-y-1">
+          <div className={`h-0.5 bg-gray-600 rounded transition-transform ${isMobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`}></div>
+          <div className={`h-0.5 bg-gray-600 rounded transition-opacity ${isMobileMenuOpen ? 'opacity-0' : ''}`}></div>
+          <div className={`h-0.5 bg-gray-600 rounded transition-transform ${isMobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></div>
+        </div>
+      </button>
+
+      {/* 行動版選單 */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden absolute top-16 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-4 z-20 border border-white/20">
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <button
+              onClick={() => {
+                actions.addNote({ x: 100, y: 100 });
+                setIsMobileMenuOpen(false);
+              }}
+              className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+            >
+              ➕ 新增
+            </button>
+            <button
+              onClick={() => {
+                if (state.isConnecting) actions.cancelConnecting();
+                setIsMobileMenuOpen(false);
+              }}
+              className={`px-3 py-2 rounded text-sm ${
+                state.isConnecting
+                  ? "bg-red-500 hover:bg-red-600 text-white"
+                  : "bg-gray-300 text-gray-500"
+              }`}
+              disabled={!state.isConnecting}
+            >
+              {state.isConnecting ? "❌ 取消連線" : "🔗 連線模式"}
+            </button>
+          </div>
+
+          {/* 縮放控制 - 行動版 */}
+          <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded">
+            <button
+              onClick={actions.zoomOut}
+              className="px-3 py-2 bg-gray-500 text-white rounded text-sm"
+            >
+              🔍－
+            </button>
+            <span className="text-sm font-medium">
+              {Math.round(state.zoom * 100)}%
+            </span>
+            <button
+              onClick={actions.zoomIn}
+              className="px-3 py-2 bg-gray-500 text-white rounded text-sm"
+            >
+              🔍＋
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <button
+              onClick={() => {
+                const rect = canvasRef.current?.getBoundingClientRect();
+                if (rect) actions.fitToView(rect.width, rect.height);
+                setIsMobileMenuOpen(false);
+              }}
+              className="px-2 py-2 bg-purple-500 text-white rounded text-sm"
+            >
+              📐 適應視圖
+            </button>
+            <button
+              onClick={() => {
+                actions.resetZoom();
+                setIsMobileMenuOpen(false);
+              }}
+              className="px-2 py-2 bg-blue-500 text-white rounded text-sm"
+            >
+              🏠 重置
+            </button>
+          </div>
+
+          {/* 資料管理 - 行動版 */}
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => {
+                handleExport();
+                setIsMobileMenuOpen(false);
+              }}
+              className="px-2 py-2 bg-green-500 text-white rounded text-sm"
+            >
+              📥 匯出
+            </button>
+            <button
+              onClick={() => {
+                handleImport();
+                setIsMobileMenuOpen(false);
+              }}
+              className="px-2 py-2 bg-orange-500 text-white rounded text-sm"
+            >
+              📤 匯入
+            </button>
+            <button
+              onClick={() => {
+                handleClearAll();
+                setIsMobileMenuOpen(false);
+              }}
+              className="px-2 py-2 bg-red-500 text-white rounded text-sm"
+            >
+              🗑️ 清除
+            </button>
+          </div>
+
+          {/* 統計資訊 - 行動版 */}
+          <div className="mt-4 pt-3 border-t border-gray-200 text-xs text-gray-500 text-center">
+            便條紙: {state.notes.length} | 連線: {state.connections.length}
+          </div>
+        </div>
+      )}
+
+      {/* 行動版說明按鈕 */}
+      <button
+        onClick={() => setIsHelpOpen(!isHelpOpen)}
+        className="lg:hidden absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-3 z-30 border border-white/20"
+      >
+        ❓
+      </button>
+
+      {/* 桌面版使用說明 */}
+      <div className="hidden lg:block absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-3 z-20 text-sm max-w-xs border border-white/20">
         <h3 className="font-bold mb-2">使用說明：</h3>
         <ul className="space-y-1 text-gray-600">
           <li>• 雙擊畫布新增便條紙</li>
@@ -250,6 +380,30 @@ export const Canvas: React.FC = () => {
           便條紙: {state.notes.length} | 連線: {state.connections.length}
         </div>
       </div>
+
+      {/* 行動版使用說明 */}
+      {isHelpOpen && (
+        <div className="lg:hidden absolute top-16 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-4 z-20 border border-white/20">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="font-bold">使用說明</h3>
+            <button
+              onClick={() => setIsHelpOpen(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+          </div>
+          <ul className="space-y-2 text-sm text-gray-600">
+            <li>• 雙擊畫布新增便條紙</li>
+            <li>• 拖拽便條紙移動位置</li>
+            <li>• 雙擊便條紙編輯內容</li>
+            <li>• 點擊🎨更換顏色</li>
+            <li>• 點擊🔗開始連線模式</li>
+            <li>• 雙指縮放或使用縮放按鈕</li>
+            <li>• 使用漢堡選單存取所有功能</li>
+          </ul>
+        </div>
+      )}
 
       {/* 畫布 */}
       <div

@@ -30,6 +30,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
   const [content, setContent] = useState(note.content);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const noteRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +40,10 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
       textareaRef.current.setSelectionRange(content.length, content.length);
     }
   }, [isEditing, content]);
+
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window);
+  }, []);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -69,6 +74,21 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
     });
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (isEditing) return;
+    if (isConnecting) return;
+
+    const rect = noteRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const touch = e.touches[0];
+    setIsDragging(true);
+    setDragOffset({
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    });
+  };
+
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!isDragging) return;
@@ -83,7 +103,27 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
     [isDragging, dragOffset, onUpdate]
   );
 
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!isDragging) return;
+      e.preventDefault(); // 防止頁面滾動
+
+      const touch = e.touches[0];
+      const newPosition = {
+        x: touch.clientX - dragOffset.x,
+        y: touch.clientY - dragOffset.y,
+      };
+
+      onUpdate({ position: newPosition });
+    },
+    [isDragging, dragOffset, onUpdate]
+  );
+
   const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchEnd = () => {
     setIsDragging(false);
   };
 
@@ -91,15 +131,29 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
     if (isDragging) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("touchmove", handleTouchMove, { passive: false });
+      document.addEventListener("touchend", handleTouchEnd);
       return () => {
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
+        document.removeEventListener("touchmove", handleTouchMove);
+        document.removeEventListener("touchend", handleTouchEnd);
       };
     }
-  }, [isDragging, dragOffset, handleMouseMove]);
+  }, [isDragging, dragOffset, handleMouseMove, handleTouchMove]);
 
   const handleDoubleClick = () => {
     setIsEditing(true);
+  };
+
+  // 針對觸控裝置的雙擊處理
+  const [lastTap, setLastTap] = useState(0);
+  const handleTouchTap = () => {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      setIsEditing(true);
+    }
+    setLastTap(now);
   };
 
   const handleContentSubmit = () => {
@@ -136,7 +190,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
         isConnecting && !isConnectingFrom ? "ring-2 ring-yellow-400 cursor-crosshair" : ""
       } ${
         !isConnecting && (isDragging ? "cursor-grabbing" : "cursor-grab")
-      }`}
+      } ${isTouchDevice ? 'touch-none' : ''}`}
       style={{
         left: note.position.x,
         top: note.position.y,
@@ -144,7 +198,9 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
         height: note.size.height,
       }}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
       onClick={handleClick}
+      onTouchEnd={handleTouchTap}
     >
       <div
         className="w-full h-full rounded-lg shadow-xl border border-white/50 relative backdrop-blur-sm"
@@ -155,12 +211,14 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
       >
         {/* 控制按鈕 */}
         <div className="absolute top-1 right-1 flex gap-1 z-10">
+          {/* 響應式按鈕大小 */}
           {/* 連線按鈕 */}
           {!isConnecting && (
             <button
-              className="w-4 h-4 rounded-full border border-gray-400 bg-white hover:bg-gray-100 text-xs flex items-center justify-center"
+              className={`${isTouchDevice ? 'w-6 h-6 text-sm' : 'w-4 h-4 text-xs'} rounded-full border border-gray-400 bg-white hover:bg-gray-100 flex items-center justify-center`}
               onClick={onStartConnect}
               onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
               title="開始連線"
             >
               🔗
@@ -170,19 +228,21 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
           {/* 顏色選擇器 */}
           <div className="relative group">
             <button
-              className="w-4 h-4 rounded-full border border-gray-400 bg-white hover:bg-gray-100 text-xs"
+              className={`${isTouchDevice ? 'w-6 h-6 text-sm' : 'w-4 h-4 text-xs'} rounded-full border border-gray-400 bg-white hover:bg-gray-100`}
               onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
             >
               🎨
             </button>
-            <div className="absolute top-5 right-0 hidden group-hover:flex bg-white rounded shadow-lg p-1 gap-1 z-20">
+            <div className={`absolute top-${isTouchDevice ? '7' : '5'} right-0 hidden group-hover:flex ${isTouchDevice ? 'group-focus-within:flex' : ''} bg-white rounded shadow-lg p-1 gap-1 z-20`}>
               {STICKY_NOTE_COLORS.map((color) => (
                 <button
                   key={color}
-                  className="w-4 h-4 rounded-full border border-gray-300 hover:scale-110"
+                  className={`${isTouchDevice ? 'w-6 h-6' : 'w-4 h-4'} rounded-full border border-gray-300 hover:scale-110`}
                   style={{ backgroundColor: color }}
                   onClick={() => handleColorChange(color)}
                   onMouseDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
                 />
               ))}
             </div>
@@ -190,16 +250,17 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
 
           {/* 刪除按鈕 */}
           <button
-            className="w-4 h-4 rounded-full bg-red-500 text-white text-xs hover:bg-red-600 flex items-center justify-center"
+            className={`${isTouchDevice ? 'w-6 h-6 text-sm' : 'w-4 h-4 text-xs'} rounded-full bg-red-500 text-white hover:bg-red-600 flex items-center justify-center`}
             onClick={handleDeleteClick}
             onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
           >
             ×
           </button>
         </div>
 
         {/* 內容區域 */}
-        <div className="p-4 pt-6 h-full">
+        <div className={`${isTouchDevice ? 'p-3 pt-8' : 'p-4 pt-6'} h-full`}>
           {isEditing ? (
             <textarea
               ref={textareaRef}
@@ -208,16 +269,18 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
               onBlur={handleContentSubmit}
               onKeyDown={handleKeyDown}
               onMouseDown={(e) => e.stopPropagation()}
-              className="w-full h-full resize-none border-none outline-none bg-transparent text-gray-700"
-              placeholder="輸入內容... (Ctrl+Enter 儲存, Esc 取消)"
+              onTouchStart={(e) => e.stopPropagation()}
+              className={`w-full h-full resize-none border-none outline-none bg-transparent text-gray-700 ${isTouchDevice ? 'text-base' : 'text-sm'}`}
+              placeholder={isTouchDevice ? "點擊編輯內容..." : "輸入內容... (Ctrl+Enter 儲存, Esc 取消)"}
             />
           ) : (
             <div
-              className="w-full h-full cursor-text whitespace-pre-wrap text-gray-700"
+              className={`w-full h-full cursor-text whitespace-pre-wrap text-gray-700 ${isTouchDevice ? 'text-base' : 'text-sm'}`}
               onDoubleClick={handleDoubleClick}
               onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
             >
-              {note.content || "雙擊編輯內容..."}
+              {note.content || (isTouchDevice ? "點擊兩次編輯內容..." : "雙擊編輯內容...")}
             </div>
           )}
         </div>
