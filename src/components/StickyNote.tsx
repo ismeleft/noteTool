@@ -36,6 +36,8 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
+      // 確保 textarea 有正確的值
+      textareaRef.current.value = content;
       textareaRef.current.focus();
       textareaRef.current.setSelectionRange(content.length, content.length);
     }
@@ -158,7 +160,9 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
   const [lastTap, setLastTap] = useState(0);
 
   const handleContentSubmit = () => {
-    onUpdate({ content });
+    const currentContent = textareaRef.current?.value || '';
+    setContent(currentContent);
+    onUpdate({ content: currentContent });
     setIsEditing(false);
   };
 
@@ -166,6 +170,10 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
     if (e.key === "Enter" && e.ctrlKey) {
       handleContentSubmit();
     } else if (e.key === "Escape") {
+      // 恢復原始內容
+      if (textareaRef.current) {
+        textareaRef.current.value = note.content;
+      }
       setContent(note.content);
       setIsEditing(false);
     }
@@ -280,11 +288,8 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
           {isEditing ? (
             <textarea
               ref={textareaRef}
-              value={content}
-              onChange={(e) => {
-                // 在組字過程中也更新狀態，讓用戶看到輸入過程
-                setContent(e.target.value);
-              }}
+              defaultValue={content}
+              onChange={(e) => setContent(e.target.value)}
               onBlur={handleContentSubmit}
               onKeyDown={handleKeyDown}
               onPointerDown={(e) => e.stopPropagation()}
