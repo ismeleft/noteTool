@@ -11,16 +11,6 @@ export const Canvas: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isHelpOpen, setIsHelpOpen] = React.useState(false);
 
-  // 將鼠標座標轉換為畫布座標
-  const screenToCanvas = (screenX: number, screenY: number) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 0, y: 0 };
-
-    const x = (screenX - rect.left - state.panOffset.x) / state.zoom;
-    const y = (screenY - rect.top - state.panOffset.y) / state.zoom;
-    return { x, y };
-  };
-
   // 滾輪縮放
   const handleWheel = (e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
@@ -117,28 +107,31 @@ export const Canvas: React.FC = () => {
     // 檢查是否直接點擊畫布或背景格線
     const target = e.target as HTMLElement | SVGElement;
 
-    const getClassName = (element: HTMLElement | SVGElement): string => {
-      if ("className" in element) {
-        if (typeof element.className === "string") {
-          return element.className;
-        } else if (element.className && "baseVal" in element.className) {
-          return (element.className as { baseVal: string }).baseVal;
-        }
-      }
-      return "";
-    };
 
-    const className = getClassName(target);
-    const isCanvasOrBackground =
-      target === e.currentTarget || className.includes("pointer-events-none");
+    // 檢查是否點擊在便條紙或按鈕上
+    const isNoteOrButton =
+      target.closest(".absolute") &&
+      !target.closest('[style*="transform: translate"]');
+    const isCanvasOrBackground = !isNoteOrButton;
+
 
     if (isCanvasOrBackground) {
-      const canvasPosition = screenToCanvas(e.clientX, e.clientY);
-      const position = {
-        x: canvasPosition.x - 100, // 置中便條紙
-        y: canvasPosition.y - 75,
-      };
-      actions.addNote(position);
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      // 簡化座標計算
+      const canvasX = e.clientX - rect.left;
+      const canvasY = e.clientY - rect.top;
+
+      // 考慮縮放和平移
+      const actualX = (canvasX - state.panOffset.x) / state.zoom;
+      const actualY = (canvasY - state.panOffset.y) / state.zoom;
+
+
+      actions.addNote({
+        x: actualX - 100, // 置中便條紙
+        y: actualY - 75,
+      });
     }
   };
 
@@ -200,7 +193,7 @@ export const Canvas: React.FC = () => {
           >
             🔍－
           </button>
-          <div className="px-2 py-2 bg-gray-100 rounded text-sm min-w-[3rem] text-center">
+          <div className="px-2 py-2 bg-gray-300 rounded text-sm min-w-[3rem] text-center">
             {Math.round(state.zoom * 100)}%
           </div>
           <button
@@ -238,9 +231,21 @@ export const Canvas: React.FC = () => {
         className="lg:hidden absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-3 z-30 border border-white/20"
       >
         <div className="w-5 h-5 flex flex-col justify-center space-y-1">
-          <div className={`h-0.5 bg-gray-600 rounded transition-transform ${isMobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`}></div>
-          <div className={`h-0.5 bg-gray-600 rounded transition-opacity ${isMobileMenuOpen ? 'opacity-0' : ''}`}></div>
-          <div className={`h-0.5 bg-gray-600 rounded transition-transform ${isMobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></div>
+          <div
+            className={`h-0.5 bg-gray-600 rounded transition-transform ${
+              isMobileMenuOpen ? "rotate-45 translate-y-1.5" : ""
+            }`}
+          ></div>
+          <div
+            className={`h-0.5 bg-gray-600 rounded transition-opacity ${
+              isMobileMenuOpen ? "opacity-0" : ""
+            }`}
+          ></div>
+          <div
+            className={`h-0.5 bg-gray-600 rounded transition-transform ${
+              isMobileMenuOpen ? "-rotate-45 -translate-y-1.5" : ""
+            }`}
+          ></div>
         </div>
       </button>
 
