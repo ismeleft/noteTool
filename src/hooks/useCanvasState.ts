@@ -2,11 +2,13 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { StickyNote, Connection, CanvasState, STICKY_NOTE_COLORS } from '@/types';
+import { StickyNote, Connection, CanvasState, Theme, STICKY_NOTE_COLORS, THEME_COLORS } from '@/types';
 import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
 
 export const useCanvasState = () => {
   const [state, setState] = useState<CanvasState>({
+    themes: [],
+    currentThemeId: null,
     notes: [],
     connections: [],
     selectedNoteId: null,
@@ -20,10 +22,18 @@ export const useCanvasState = () => {
   useEffect(() => {
     const savedData = loadFromLocalStorage();
     if (savedData) {
+      // 為舊資料遷移：如果便條紙沒有themeId，設為null
+      const migratedNotes = savedData.notes?.map((note: any) => ({
+        ...note,
+        themeId: note.themeId || null,
+      })) || [];
+
       setState(prev => ({
         ...prev,
-        notes: savedData.notes,
-        connections: savedData.connections,
+        themes: savedData.themes || [],
+        currentThemeId: savedData.currentThemeId || null,
+        notes: migratedNotes,
+        connections: savedData.connections || [],
       }));
     }
   }, []);
@@ -31,13 +41,15 @@ export const useCanvasState = () => {
   // 自動儲存
   useEffect(() => {
     // 只有在有資料時才儲存，避免初始載入時覆蓋資料
-    if (state.notes.length > 0 || state.connections.length > 0) {
+    if (state.notes.length > 0 || state.connections.length > 0 || state.themes.length > 0) {
       saveToLocalStorage({
+        themes: state.themes,
+        currentThemeId: state.currentThemeId,
         notes: state.notes,
         connections: state.connections,
       });
     }
-  }, [state.notes, state.connections]);
+  }, [state.themes, state.currentThemeId, state.notes, state.connections]);
 
   const addNote = useCallback((position: { x: number; y: number }) => {
     const newNote: StickyNote = {
@@ -46,6 +58,7 @@ export const useCanvasState = () => {
       position,
       color: STICKY_NOTE_COLORS[0],
       size: { width: 200, height: 150 },
+      themeId: state.currentThemeId || null,
     };
 
     setState(prev => ({
@@ -53,7 +66,7 @@ export const useCanvasState = () => {
       notes: [...prev.notes, newNote],
       selectedNoteId: newNote.id,
     }));
-  }, []);
+  }, [state.currentThemeId]);
 
   const updateNote = useCallback((id: string, updates: Partial<StickyNote>) => {
     setState(prev => ({
@@ -290,8 +303,72 @@ export const useCanvasState = () => {
     }));
   }, [state.notes]);
 
+  // 主題相關操作
+  const createTheme = useCallback((theme: Theme) => {
+    setState(prev => ({
+      ...prev,
+      themes: [...prev.themes, theme],
+    }));
+  }, []);
+
+  const updateTheme = useCallback((updatedTheme: Theme) => {
+    setState(prev => ({
+      ...prev,
+      themes: prev.themes.map(theme =>
+        theme.id === updatedTheme.id ? updatedTheme : theme
+      ),
+    }));
+  }, []);
+
+  const deleteTheme = useCallback((themeId: string) => {
+    setState(prev => ({
+      ...prev,
+      themes: prev.themes.filter(theme => theme.id !== themeId),
+      currentThemeId: prev.currentThemeId === themeId ? null : prev.currentThemeId,
+      // 刪除屬於此主題的所有便條紙和相關連線
+      notes: prev.notes.filter(note => note.themeId !== themeId),
+      connections: prev.connections.filter(conn => {
+        const sourceNote = prev.notes.find(note => note.id === conn.sourceId);
+        const targetNote = prev.notes.find(note => note.id === conn.targetId);
+        return sourceNote?.themeId !== themeId && targetNote?.themeId !== themeId;
+      }),
+    }));
+  }, []);
+
+  const selectTheme = useCallback((themeId: string | null) => {
+    setState(prev => ({
+      ...prev,
+      currentThemeId: themeId,
+      selectedNoteId: null,
+      isConnecting: false,
+      connectingFromId: null,
+    }));
+  }, []);
+
+  // 獲取當前主題的便條紙
+  const getCurrentThemeNotes = useCallback(() => {
+    if (state.currentThemeId === null) {
+      return state.notes; // 顯示所有便條紙
+    }
+    return state.notes.filter(note => note.themeId === state.currentThemeId);
+  }, [state.notes, state.currentThemeId]);
+
+  // 獲取當前主題的連線
+  const getCurrentThemeConnections = useCallback(() => {
+    const currentNotes = getCurrentThemeNotes();
+    const currentNoteIds = new Set(currentNotes.map(note => note.id));
+    
+    return state.connections.filter(conn =>
+      currentNoteIds.has(conn.sourceId) && currentNoteIds.has(conn.targetId)
+    );
+  }, [state.connections, getCurrentThemeNotes]);
+
   return {
-    state,
+    state: {
+      ...state,
+      currentNotes: getCurrentThemeNotes(),
+      currentConnections: getCurrentThemeConnections(),
+    },
     actions: {
       addNote,
       updateNote,
@@ -311,6 +388,10 @@ export const useCanvasState = () => {
       setZoom,
       setPanOffset,
       fitToView,
+      createTheme,
+      updateTheme,
+      deleteTheme,
+      selectTheme,
     },
   };
 };

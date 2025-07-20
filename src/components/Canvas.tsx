@@ -3,6 +3,7 @@
 import React, { useRef } from "react";
 import { StickyNote } from "./StickyNote";
 import { ConnectionLayer } from "./ConnectionLayer";
+import { ThemeManager } from "./ThemeManager";
 import { useCanvasState } from "@/hooks/useCanvasState";
 
 export const Canvas: React.FC = () => {
@@ -10,6 +11,7 @@ export const Canvas: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isHelpOpen, setIsHelpOpen] = React.useState(false);
+  const [isThemeManagerOpen, setIsThemeManagerOpen] = React.useState(false);
 
   // 滾輪縮放
   const handleWheel = (e: React.WheelEvent) => {
@@ -139,6 +141,64 @@ export const Canvas: React.FC = () => {
     <div className="w-full h-full relative bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* 桌面版工具列 */}
       <div className="hidden lg:flex absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2 z-20 flex-wrap gap-2 border border-white/20">
+        {/* 主題切換器 */}
+        <div className="border-r border-gray-300 pr-2 flex items-center gap-2">
+          <div className="relative group">
+            <button className="px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded text-sm font-medium flex items-center gap-2 shadow-sm">
+              {state.currentThemeId ? (
+                <>
+                  <div
+                    className="w-3 h-3 rounded-full border border-gray-300"
+                    style={{
+                      backgroundColor: state.themes.find(t => t.id === state.currentThemeId)?.color,
+                    }}
+                  ></div>
+                  <span className="text-gray-800">{state.themes.find(t => t.id === state.currentThemeId)?.name}</span>
+                </>
+              ) : (
+                <>
+                  <div className="w-3 h-3 rounded-full bg-gray-500 border border-gray-300"></div>
+                  <span className="text-gray-800">全部便條紙</span>
+                </>
+              )}
+              <span className="text-gray-600">▼</span>
+            </button>
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-xl min-w-40 hidden group-hover:block z-30">
+              <button
+                onClick={() => actions.selectTheme(null)}
+                className={`w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-gray-800 ${
+                  state.currentThemeId === null ? 'bg-blue-50 text-blue-700 font-medium' : ''
+                }`}
+              >
+                <div className="w-3 h-3 rounded-full bg-gray-500 border border-gray-400"></div>
+                全部便條紙
+              </button>
+              {state.themes.map((theme) => (
+                <button
+                  key={theme.id}
+                  onClick={() => actions.selectTheme(theme.id)}
+                  className={`w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-gray-800 ${
+                    state.currentThemeId === theme.id ? 'bg-blue-50 text-blue-700 font-medium' : ''
+                  }`}
+                >
+                  <div
+                    className="w-3 h-3 rounded-full border border-gray-400"
+                    style={{ backgroundColor: theme.color }}
+                  ></div>
+                  {theme.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            onClick={() => setIsThemeManagerOpen(true)}
+            className="px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 text-sm"
+            title="管理主題"
+          >
+            ⚙️
+          </button>
+        </div>
+
         <button
           onClick={() => actions.addNote({ x: 100, y: 100 })}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -252,6 +312,81 @@ export const Canvas: React.FC = () => {
       {/* 行動版選單 */}
       {isMobileMenuOpen && (
         <div className="lg:hidden absolute top-16 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-4 z-20 border border-white/20">
+          {/* 當前主題顯示 */}
+          <div className="mb-4 p-3 bg-gray-100 rounded-lg border border-gray-200">
+            <div className="text-xs text-gray-600 mb-1 font-medium">目前主題</div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {state.currentThemeId ? (
+                  <>
+                    <div
+                      className="w-4 h-4 rounded-full border border-gray-400"
+                      style={{
+                        backgroundColor: state.themes.find(t => t.id === state.currentThemeId)?.color,
+                      }}
+                    ></div>
+                    <span className="font-medium text-gray-800">{state.themes.find(t => t.id === state.currentThemeId)?.name}</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-4 h-4 rounded-full bg-gray-500 border border-gray-400"></div>
+                    <span className="font-medium text-gray-800">全部便條紙</span>
+                  </>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setIsThemeManagerOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="px-2 py-1 bg-purple-500 text-white rounded text-xs"
+              >
+                管理
+              </button>
+            </div>
+          </div>
+
+          {/* 主題快速切換 */}
+          <div className="mb-4">
+            <div className="text-xs text-gray-600 mb-2 font-medium">快速切換</div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => {
+                  actions.selectTheme(null);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`px-2 py-1 rounded text-xs flex items-center gap-1 border ${
+                  state.currentThemeId === null 
+                    ? 'bg-blue-100 text-blue-700 border-blue-400 font-medium' 
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+                全部
+              </button>
+              {state.themes.slice(0, 4).map((theme) => (
+                <button
+                  key={theme.id}
+                  onClick={() => {
+                    actions.selectTheme(theme.id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`px-2 py-1 rounded text-xs flex items-center gap-1 border ${
+                    state.currentThemeId === theme.id 
+                      ? 'bg-blue-100 text-blue-700 border-blue-400 font-medium' 
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div
+                    className="w-2 h-2 rounded-full border border-gray-400"
+                    style={{ backgroundColor: theme.color }}
+                  ></div>
+                  {theme.name.length > 6 ? theme.name.slice(0, 6) + '...' : theme.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3 mb-4">
             <button
               onClick={() => {
@@ -352,7 +487,7 @@ export const Canvas: React.FC = () => {
 
           {/* 統計資訊 - 行動版 */}
           <div className="mt-4 pt-3 border-t border-gray-200 text-xs text-gray-500 text-center">
-            便條紙: {state.notes.length} | 連線: {state.connections.length}
+            便條紙: {state.currentNotes.length} | 連線: {state.currentConnections.length}
           </div>
         </div>
       )}
@@ -382,7 +517,7 @@ export const Canvas: React.FC = () => {
 
         {/* 資料統計 */}
         <div className="mt-3 pt-2 border-t border-gray-200 text-xs text-gray-500">
-          便條紙: {state.notes.length} | 連線: {state.connections.length}
+          便條紙: {state.currentNotes.length} | 連線: {state.currentConnections.length}
         </div>
       </div>
 
@@ -444,13 +579,13 @@ export const Canvas: React.FC = () => {
 
           {/* 連線層 */}
           <ConnectionLayer
-            connections={state.connections}
-            notes={state.notes}
+            connections={state.currentConnections}
+            notes={state.currentNotes}
             onDeleteConnection={actions.deleteConnection}
           />
 
           {/* 便條紙 */}
-          {state.notes.map((note) => (
+          {state.currentNotes.map((note) => (
             <StickyNote
               key={note.id}
               note={note}
@@ -470,6 +605,19 @@ export const Canvas: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* 主題管理器 */}
+      {isThemeManagerOpen && (
+        <ThemeManager
+          themes={state.themes}
+          currentThemeId={state.currentThemeId}
+          onCreateTheme={actions.createTheme}
+          onUpdateTheme={actions.updateTheme}
+          onDeleteTheme={actions.deleteTheme}
+          onSelectTheme={actions.selectTheme}
+          onClose={() => setIsThemeManagerOpen(false)}
+        />
+      )}
     </div>
   );
 };

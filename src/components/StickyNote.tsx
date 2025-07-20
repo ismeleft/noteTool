@@ -152,7 +152,8 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
     }
   }, [isDragging, dragOffset, handleMouseMove, handleTouchMove]);
 
-  const handleDoubleClick = () => {
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsEditing(true);
   };
 
@@ -210,6 +211,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       onClick={handleClick}
+      onDoubleClick={(e) => e.stopPropagation()}
     >
       <div
         className="w-full h-full rounded-lg shadow-xl border border-white/50 relative backdrop-blur-sm"
@@ -318,6 +320,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
                 // 處理雙擊編輯
                 const now = Date.now();
                 if (now - lastTap < 300) {
+                  e.preventDefault(); // 防止觸發其他事件
                   setIsEditing(true);
                 }
                 setLastTap(now);

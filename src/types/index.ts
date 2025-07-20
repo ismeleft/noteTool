@@ -1,3 +1,12 @@
+export interface Theme {
+  id: string;
+  name: string;
+  description?: string;
+  color: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface StickyNote {
   id: string;
   content: string;
@@ -10,6 +19,7 @@ export interface StickyNote {
     width: number;
     height: number;
   };
+  themeId: string;
 }
 
 export interface Connection {
@@ -19,6 +29,8 @@ export interface Connection {
 }
 
 export interface CanvasState {
+  themes: Theme[];
+  currentThemeId: string | null;
   notes: StickyNote[];
   connections: Connection[];
   selectedNoteId: string | null;
@@ -41,4 +53,16 @@ export const STICKY_NOTE_COLORS = [
   '#FFFFFF', // 白色
 ] as const;
 
+export const THEME_COLORS = [
+  '#3B82F6', // 藍色
+  '#10B981', // 綠色
+  '#F59E0B', // 黃色
+  '#EF4444', // 紅色
+  '#8B5CF6', // 紫色
+  '#06B6D4', // 青色
+  '#F97316', // 橘色
+  '#84CC16', // 萊姆綠
+] as const;
+
 export type StickyNoteColor = typeof STICKY_NOTE_COLORS[number];
+export type ThemeColor = typeof THEME_COLORS[number];
