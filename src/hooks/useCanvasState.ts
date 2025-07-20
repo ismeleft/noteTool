@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { StickyNote, Connection, CanvasState, Theme, STICKY_NOTE_COLORS, THEME_COLORS } from '@/types';
+import { StickyNote, Connection, CanvasState, Theme, STICKY_NOTE_COLORS } from '@/types';
 import { saveToLocalStorage, loadFromLocalStorage } from '@/utils/localStorage';
 
 export const useCanvasState = () => {
@@ -23,7 +23,7 @@ export const useCanvasState = () => {
     const savedData = loadFromLocalStorage();
     if (savedData) {
       // 為舊資料遷移：如果便條紙沒有themeId，設為null
-      const migratedNotes = savedData.notes?.map((note: any) => ({
+      const migratedNotes = savedData.notes?.map((note: StickyNote & { themeId?: string | null }) => ({
         ...note,
         themeId: note.themeId || null,
       })) || [];
@@ -189,6 +189,8 @@ export const useCanvasState = () => {
 
   const clearAllData = useCallback(() => {
     setState({
+      themes: [],
+      currentThemeId: null,
       notes: [],
       connections: [],
       selectedNoteId: null,
@@ -214,6 +216,8 @@ export const useCanvasState = () => {
       if (data.notes && data.connections) {
         setState(prev => ({
           ...prev,
+          themes: data.themes || [],
+          currentThemeId: data.currentThemeId || null,
           notes: data.notes,
           connections: data.connections,
           selectedNoteId: null,

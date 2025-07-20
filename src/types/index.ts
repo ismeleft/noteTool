@@ -1,48 +1,3 @@
-export interface Theme {
-  id: string;
-  name: string;
-  description?: string;
-  color: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface StickyNote {
-  id: string;
-  content: string;
-  position: {
-    x: number;
-    y: number;
-  };
-  color: string;
-  size: {
-    width: number;
-    height: number;
-  };
-  themeId: string;
-}
-
-export interface Connection {
-  id: string;
-  sourceId: string;
-  targetId: string;
-}
-
-export interface CanvasState {
-  themes: Theme[];
-  currentThemeId: string | null;
-  notes: StickyNote[];
-  connections: Connection[];
-  selectedNoteId: string | null;
-  isConnecting: boolean;
-  connectingFromId: string | null;
-  zoom: number;
-  panOffset: {
-    x: number;
-    y: number;
-  };
-}
-
 export const STICKY_NOTE_COLORS = [
   '#FFE066', // 黃色
   '#FF9999', // 粉紅色
@@ -66,3 +21,48 @@ export const THEME_COLORS = [
 
 export type StickyNoteColor = typeof STICKY_NOTE_COLORS[number];
 export type ThemeColor = typeof THEME_COLORS[number];
+
+export interface Theme {
+  id: string;
+  name: string;
+  description?: string;
+  color: ThemeColor;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StickyNote {
+  id: string;
+  content: string;
+  position: {
+    x: number;
+    y: number;
+  };
+  color: string;
+  size: {
+    width: number;
+    height: number;
+  };
+  themeId: string | null;
+}
+
+export interface Connection {
+  id: string;
+  sourceId: string;
+  targetId: string;
+}
+
+export interface CanvasState {
+  themes: Theme[];
+  currentThemeId: string | null;
+  notes: StickyNote[];
+  connections: Connection[];
+  selectedNoteId: string | null;
+  isConnecting: boolean;
+  connectingFromId: string | null;
+  zoom: number;
+  panOffset: {
+    x: number;
+    y: number;
+  };
+}

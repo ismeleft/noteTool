@@ -2,11 +2,13 @@ import { CanvasState } from '@/types';
 
 const STORAGE_KEY = 'sticky-notes-app-data';
 
-export const saveToLocalStorage = (state: Pick<CanvasState, 'notes' | 'connections'>) => {
+export const saveToLocalStorage = (state: Pick<CanvasState, 'notes' | 'connections' | 'themes' | 'currentThemeId'>) => {
   try {
     const dataToSave = {
       notes: state.notes,
       connections: state.connections,
+      themes: state.themes,
+      currentThemeId: state.currentThemeId,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -24,6 +26,8 @@ export const loadFromLocalStorage = () => {
     return {
       notes: data.notes || [],
       connections: data.connections || [],
+      themes: data.themes || [],
+      currentThemeId: data.currentThemeId || null,
       savedAt: data.savedAt,
     };
   } catch (error) {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Theme, THEME_COLORS } from "@/types";
+import { Theme, THEME_COLORS, ThemeColor } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 
 interface ThemeManagerProps {
@@ -25,7 +25,11 @@ export const ThemeManager: React.FC<ThemeManagerProps> = ({
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingTheme, setEditingTheme] = useState<Theme | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    description: string;
+    color: ThemeColor;
+  }>({
     name: "",
     description: "",
     color: THEME_COLORS[0],
@@ -77,7 +81,7 @@ export const ThemeManager: React.FC<ThemeManagerProps> = ({
   const handleCancel = () => {
     setIsCreating(false);
     setEditingTheme(null);
-    setFormData({ name: "", description: "", color: THEME_COLORS[0] });
+    setFormData({ name: "", description: "", color: THEME_COLORS[0] as ThemeColor });
   };
 
   const handleDelete = (theme: Theme) => {
