@@ -213,6 +213,51 @@ export const useFirebaseSync = () => {
     await initializeFirebase();
   }, [initializeFirebase, syncState.isSyncing]);
 
+  // 跨裝置同步：載入其他用戶的資料
+  const syncFromOtherDevice = useCallback(async (otherUserId: string) => {
+    if (!syncState.isOnline) {
+      throw new Error('需要網路連接才能進行跨裝置同步');
+    }
+
+    setSyncState(prev => ({ ...prev, isSyncing: true, syncError: null }));
+    
+    try {
+      console.log(`開始從用戶 ${otherUserId} 同步資料...`);
+      
+      // 讀取其他用戶的資料
+      const otherUserData = await firebaseService.loadUserDataById(otherUserId);
+      
+      if (!otherUserData) {
+        throw new Error('找不到指定用戶的資料，請檢查 ID 是否正確');
+      }
+
+      // 將其他用戶的資料合併到當前用戶（覆蓋模式）
+      const syncData = {
+        themes: otherUserData.themes || [],
+        currentThemeId: otherUserData.currentThemeId || null,
+        notes: otherUserData.notes || [],
+        connections: otherUserData.connections || [],
+      };
+
+      // 保存到當前用戶的雲端
+      await firebaseService.saveUserData(syncData);
+      
+      setSyncState(prev => ({
+        ...prev,
+        lastSynced: new Date(),
+      }));
+
+      console.log(`成功從用戶 ${otherUserId} 同步資料`);
+      return syncData;
+
+    } catch (error) {
+      console.error('跨裝置同步失敗:', error);
+      throw error;
+    } finally {
+      setSyncState(prev => ({ ...prev, isSyncing: false }));
+    }
+  }, [syncState.isOnline]);
+
   // 初始化
   useEffect(() => {
     initializeFirebase();
@@ -289,5 +334,6 @@ export const useFirebaseSync = () => {
     getUserId,
     setupRealtimeSync,
     retryConnection,
+    syncFromOtherDevice,
   };
 };

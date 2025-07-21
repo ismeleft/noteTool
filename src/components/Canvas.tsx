@@ -5,6 +5,7 @@ import { StickyNote } from "./StickyNote";
 import { ConnectionLayer } from "./ConnectionLayer";
 import { ThemeManager } from "./ThemeManager";
 import { SyncStatus } from "./SyncStatus";
+import { CrossDeviceSync } from "./CrossDeviceSync";
 import { useCanvasStateWithSync } from "@/hooks/useCanvasStateWithSync";
 
 export const Canvas: React.FC = () => {
@@ -551,6 +552,14 @@ export const Canvas: React.FC = () => {
           onForceSync={actions.forceSync}
           onToggleOnlineMode={actions.toggleOnlineMode}
           getUserId={actions.getUserId}
+        />
+
+        {/* 跨裝置同步 */}
+        <CrossDeviceSync
+          onSyncFromDevice={actions.syncFromOtherDevice}
+          currentUserId={actions.getUserId()}
+          isOnline={syncState.isOnline}
+          isSyncing={syncState.isSyncing}
         />
 
         {/* 使用說明 */}

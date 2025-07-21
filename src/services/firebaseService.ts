@@ -295,6 +295,31 @@ class FirebaseService {
     return this.currentUser?.uid || null;
   }
 
+  // 讀取其他用戶的資料（用於跨裝置同步）
+  async loadUserDataById(userId: string): Promise<UserData | null> {
+    this.checkFirebaseConfig();
+    
+    try {
+      // 先確保當前用戶已認證
+      await this.waitForAuth();
+      
+      const userDoc = doc(db!, 'users', userId);
+      const docSnap = await getDoc(userDoc);
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data() as UserData;
+        console.log(`成功讀取用戶 ${userId} 的資料`);
+        return data;
+      } else {
+        console.log(`找不到用戶 ${userId} 的資料`);
+        return null;
+      }
+    } catch (error) {
+      console.error(`讀取用戶 ${userId} 資料失敗:`, error);
+      throw error;
+    }
+  }
+
 }
 
 // 創建單例實例

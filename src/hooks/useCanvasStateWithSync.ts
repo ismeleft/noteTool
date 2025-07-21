@@ -29,6 +29,7 @@ export const useCanvasStateWithSync = () => {
     toggleOnlineMode, 
     getUserId,
     setupRealtimeSync,
+    syncFromOtherDevice,
   } = useFirebaseSync();
 
   const isFirstLoad = useRef(true);
@@ -472,6 +473,31 @@ export const useCanvasStateWithSync = () => {
     );
   }, [state.connections, getCurrentThemeNotes]);
 
+  // 跨裝置同步功能
+  const handleCrossDeviceSync = useCallback(async (otherUserId: string) => {
+    try {
+      const syncedData = await syncFromOtherDevice(otherUserId);
+      
+      // 更新本地狀態
+      setState(prev => ({
+        ...prev,
+        themes: syncedData.themes,
+        currentThemeId: syncedData.currentThemeId,
+        notes: syncedData.notes,
+        connections: syncedData.connections,
+        // 重置 UI 狀態
+        selectedNoteId: null,
+        isConnecting: false,
+        connectingFromId: null,
+      }));
+
+      console.log('跨裝置同步完成，本地狀態已更新');
+    } catch (error) {
+      console.error('跨裝置同步失敗:', error);
+      throw error;
+    }
+  }, [syncFromOtherDevice]);
+
   return {
     state: {
       ...state,
@@ -510,6 +536,7 @@ export const useCanvasStateWithSync = () => {
       }),
       toggleOnlineMode,
       getUserId,
+      syncFromOtherDevice: handleCrossDeviceSync,
     },
   };
 };
