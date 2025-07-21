@@ -4,10 +4,11 @@ import React, { useRef } from "react";
 import { StickyNote } from "./StickyNote";
 import { ConnectionLayer } from "./ConnectionLayer";
 import { ThemeManager } from "./ThemeManager";
-import { useCanvasState } from "@/hooks/useCanvasState";
+import { SyncStatus } from "./SyncStatus";
+import { useCanvasStateWithSync } from "@/hooks/useCanvasStateWithSync";
 
 export const Canvas: React.FC = () => {
-  const { state, actions } = useCanvasState();
+  const { state, syncState, actions } = useCanvasStateWithSync();
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isHelpOpen, setIsHelpOpen] = React.useState(false);
@@ -485,6 +486,48 @@ export const Canvas: React.FC = () => {
             </button>
           </div>
 
+          {/* 同步狀態 - 行動版 */}
+          <div className="mt-4 pt-3 border-t border-gray-200">
+            <div className="text-xs text-gray-600 mb-2 font-medium">雲端同步</div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm">
+                  {syncState.isSyncing ? '🔄' : syncState.isOnline ? '✅' : '⚠️'}
+                </span>
+                <span className="text-xs text-gray-700">
+                  {syncState.isSyncing ? '同步中' : syncState.isOnline ? '已連線' : '離線'}
+                </span>
+              </div>
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => {
+                    actions.forceSync();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  disabled={syncState.isSyncing || !syncState.isOnline}
+                  className={`px-2 py-1 text-xs rounded ${
+                    syncState.isSyncing || !syncState.isOnline
+                      ? 'bg-gray-100 text-gray-400'
+                      : 'bg-blue-500 text-white'
+                  }`}
+                >
+                  同步
+                </button>
+                <button
+                  onClick={() => {
+                    actions.toggleOnlineMode();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`px-2 py-1 text-xs rounded ${
+                    syncState.isOnline ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'
+                  }`}
+                >
+                  {syncState.isOnline ? '線上' : '離線'}
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* 統計資訊 - 行動版 */}
           <div className="mt-4 pt-3 border-t border-gray-200 text-xs text-gray-500 text-center">
             便條紙: {state.currentNotes.length} | 連線: {state.currentConnections.length}
@@ -500,24 +543,35 @@ export const Canvas: React.FC = () => {
         ❓
       </button>
 
-      {/* 桌面版使用說明 */}
-      <div className="hidden lg:block absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-3 z-20 text-sm max-w-xs border border-white/20">
-        <h3 className="font-bold mb-2">使用說明：</h3>
-        <ul className="space-y-1 text-gray-600">
-          <li>• 雙擊畫布新增便條紙</li>
-          <li>• 拖拽便條紙移動位置</li>
-          <li>• 雙擊便條紙編輯內容</li>
-          <li>• 點擊🎨更換顏色</li>
-          <li>• 點擊🔗開始連線模式</li>
-          <li>• 懸停連線可刪除</li>
-          <li>• Ctrl+滾輪縮放視圖</li>
-          <li>• 📐適應視圖 🏠重置縮放</li>
-          <li>• 📥匯出 📤匯入 🗑️清除</li>
-        </ul>
+      {/* 桌面版側邊面板 */}
+      <div className="hidden lg:block absolute top-4 right-4 z-20 space-y-4 max-w-xs">
+        {/* 同步狀態 */}
+        <SyncStatus
+          syncState={syncState}
+          onForceSync={actions.forceSync}
+          onToggleOnlineMode={actions.toggleOnlineMode}
+          getUserId={actions.getUserId}
+        />
 
-        {/* 資料統計 */}
-        <div className="mt-3 pt-2 border-t border-gray-200 text-xs text-gray-500">
-          便條紙: {state.currentNotes.length} | 連線: {state.currentConnections.length}
+        {/* 使用說明 */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-3 text-sm border border-white/20">
+          <h3 className="font-bold mb-2">使用說明：</h3>
+          <ul className="space-y-1 text-gray-600">
+            <li>• 雙擊畫布新增便條紙</li>
+            <li>• 拖拽便條紙移動位置</li>
+            <li>• 雙擊便條紙編輯內容</li>
+            <li>• 點擊🎨更換顏色</li>
+            <li>• 點擊🔗開始連線模式</li>
+            <li>• 懸停連線可刪除</li>
+            <li>• Ctrl+滾輪縮放視圖</li>
+            <li>• 📐適應視圖 🏠重置縮放</li>
+            <li>• 📥匯出 📤匯入 🗑️清除</li>
+          </ul>
+
+          {/* 資料統計 */}
+          <div className="mt-3 pt-2 border-t border-gray-200 text-xs text-gray-500">
+            便條紙: {state.currentNotes.length} | 連線: {state.currentConnections.length}
+          </div>
         </div>
       </div>
 

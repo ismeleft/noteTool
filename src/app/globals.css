@@ -25,6 +25,254 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Markdown 內容樣式 */
+.markdown-content {
+  line-height: 1.6;
+  font-size: inherit;
+  color: #1f2937; /* 深灰色，確保在淺色背景上可讀 */
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  font-weight: bold;
+  margin: 0.8em 0 0.4em 0;
+  line-height: 1.3;
+  color: #111827;
+}
+
+.markdown-content h1 {
+  font-size: 1.5em;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 0.3em;
+}
+
+.markdown-content h2 {
+  font-size: 1.3em;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.2em;
+}
+
+.markdown-content h3 {
+  font-size: 1.2em;
+}
+
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  font-size: 1.1em;
+}
+
+.markdown-content p {
+  margin: 0.8em 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0.8em 0;
+  padding-left: 1.5em;
+}
+
+.markdown-content li {
+  margin: 0.3em 0;
+}
+
+.markdown-content blockquote {
+  border-left: 3px solid #6b7280;
+  padding-left: 1em;
+  margin: 1em 0;
+  color: #374151;
+  font-style: italic;
+}
+
+.markdown-content code {
+  background-color: rgba(0, 0, 0, 0.15);
+  color: #1f2937;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9em;
+}
+
+.markdown-content pre {
+  background-color: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+  padding: 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+  color: #1f2937;
+}
+
+.markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.markdown-content a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.markdown-content a:hover {
+  color: #1d4ed8;
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid #9ca3af;
+  padding: 0.5em;
+  text-align: left;
+  color: #111827;
+}
+
+.markdown-content th {
+  background-color: rgba(0, 0, 0, 0.15);
+  font-weight: bold;
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 2px solid #6b7280;
+  margin: 1.5em 0;
+}
+
+/* 強調文字 */
+.markdown-content strong {
+  font-weight: bold;
+}
+
+.markdown-content em {
+  font-style: italic;
+}
+
+/* 刪除線 */
+.markdown-content del {
+  text-decoration: line-through;
+}
+
+/* 任務清單 */
+.markdown-content input[type="checkbox"] {
+  margin-right: 0.5em;
+}
+
+/* 自定義滾動條樣式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* 針對便條紙內的滾動條，使用更細緻的樣式 */
+.markdown-content::-webkit-scrollbar,
+.sticky-note-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.markdown-content::-webkit-scrollbar-track,
+.sticky-note-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.markdown-content::-webkit-scrollbar-thumb,
+.sticky-note-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.markdown-content::-webkit-scrollbar-thumb:hover,
+.sticky-note-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Firefox 滾動條樣式 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) rgba(0, 0, 0, 0.05);
+}
+
+.markdown-content,
+.sticky-note-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) rgba(255, 255, 255, 0.1);
+}
+
+/* 滾動條在深色主題下的適配 */
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .markdown-content::-webkit-scrollbar-thumb,
+  .sticky-note-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.4);
+  }
+  
+  .markdown-content::-webkit-scrollbar-thumb:hover,
+  .sticky-note-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* 滾動條動畫效果 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+::-webkit-scrollbar-thumb {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* 隱藏滾動條，但保持可滾動（可選）*/
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 /* 優化觸控裝置的輸入體驗 */
 @media (pointer: coarse) {
   textarea {

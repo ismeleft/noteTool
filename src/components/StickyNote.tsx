@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { StickyNote as StickyNoteType, STICKY_NOTE_COLORS } from "@/types";
 
 interface StickyNoteProps {
@@ -29,8 +32,12 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(note.content);
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [resizeStartSize, setResizeStartSize] = useState({ width: 0, height: 0 });
+  const [resizeStartPos, setResizeStartPos] = useState({ x: 0, y: 0 });
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [showMarkdown, setShowMarkdown] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const noteRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +72,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isEditing) return;
     if (isConnecting) return; // 連線模式下不允許拖拽
+    if (isResizing) return; // 調整大小時不允許拖拽
 
     const rect = noteRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -74,6 +82,26 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     });
+  };
+
+  // 調整大小處理
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isEditing || isConnecting) return;
+
+    setIsResizing(true);
+    setResizeStartSize({ width: note.size.width, height: note.size.height });
+    setResizeStartPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleResizeTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (isEditing || isConnecting) return;
+
+    const touch = e.touches[0];
+    setIsResizing(true);
+    setResizeStartSize({ width: note.size.width, height: note.size.height });
+    setResizeStartPos({ x: touch.clientX, y: touch.clientY });
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -99,44 +127,62 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      if (!isDragging) return;
-
-      const newPosition = {
-        x: e.clientX - dragOffset.x,
-        y: e.clientY - dragOffset.y,
-      };
-
-      onUpdate({ position: newPosition });
+      if (isDragging) {
+        const newPosition = {
+          x: e.clientX - dragOffset.x,
+          y: e.clientY - dragOffset.y,
+        };
+        onUpdate({ position: newPosition });
+      } else if (isResizing) {
+        const deltaX = e.clientX - resizeStartPos.x;
+        const deltaY = e.clientY - resizeStartPos.y;
+        
+        const newWidth = Math.max(100, resizeStartSize.width + deltaX); // 最小寬度 100px
+        const newHeight = Math.max(80, resizeStartSize.height + deltaY); // 最小高度 80px
+        
+        onUpdate({ size: { width: newWidth, height: newHeight } });
+      }
     },
-    [isDragging, dragOffset, onUpdate]
+    [isDragging, isResizing, dragOffset, resizeStartPos, resizeStartSize, onUpdate]
   );
 
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
-      if (!isDragging) return;
-      e.preventDefault(); // 防止頁面滾動
-
-      const touch = e.touches[0];
-      const newPosition = {
-        x: touch.clientX - dragOffset.x,
-        y: touch.clientY - dragOffset.y,
-      };
-
-      onUpdate({ position: newPosition });
+      if (isDragging) {
+        e.preventDefault(); // 防止頁面滾動
+        const touch = e.touches[0];
+        const newPosition = {
+          x: touch.clientX - dragOffset.x,
+          y: touch.clientY - dragOffset.y,
+        };
+        onUpdate({ position: newPosition });
+      } else if (isResizing) {
+        e.preventDefault(); // 防止頁面滾動
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - resizeStartPos.x;
+        const deltaY = touch.clientY - resizeStartPos.y;
+        
+        const newWidth = Math.max(100, resizeStartSize.width + deltaX); // 最小寬度 100px
+        const newHeight = Math.max(80, resizeStartSize.height + deltaY); // 最小高度 80px
+        
+        onUpdate({ size: { width: newWidth, height: newHeight } });
+      }
     },
-    [isDragging, dragOffset, onUpdate]
+    [isDragging, isResizing, dragOffset, resizeStartPos, resizeStartSize, onUpdate]
   );
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setIsResizing(false);
   };
 
   const handleTouchEnd = () => {
     setIsDragging(false);
+    setIsResizing(false);
   };
 
   useEffect(() => {
-    if (isDragging) {
+    if (isDragging || isResizing) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
       document.addEventListener("touchmove", handleTouchMove, {
@@ -150,7 +196,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
         document.removeEventListener("touchend", handleTouchEnd);
       };
     }
-  }, [isDragging, dragOffset, handleMouseMove, handleTouchMove]);
+  }, [isDragging, isResizing, dragOffset, handleMouseMove, handleTouchMove]);
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -199,7 +245,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
         isConnecting && !isConnectingFrom
           ? "ring-2 ring-yellow-400 cursor-crosshair"
           : ""
-      } ${!isConnecting && (isDragging ? "cursor-grabbing" : "cursor-grab")} ${
+      } ${!isConnecting && (isDragging ? "cursor-grabbing" : isResizing ? "cursor-nw-resize" : "cursor-grab")} ${
         isTouchDevice ? "touch-none" : ""
       }`}
       style={{
@@ -224,6 +270,23 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
         {/* 控制按鈕 */}
         <div className="absolute top-1 right-1 flex gap-1 z-10">
           {/* 響應式按鈕大小 */}
+          {/* Markdown 切換按鈕 */}
+          {!isEditing && (
+            <button
+              className={`${
+                isTouchDevice ? "w-6 h-6 text-sm" : "w-4 h-4 text-xs"
+              } rounded-full border border-gray-400 ${
+                showMarkdown ? "bg-blue-100 text-blue-600" : "bg-white"
+              } hover:bg-gray-100 flex items-center justify-center`}
+              onClick={() => setShowMarkdown(!showMarkdown)}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              title={showMarkdown ? "顯示原始文字" : "顯示 Markdown"}
+            >
+              {showMarkdown ? (isTouchDevice ? "📝" : "📝") : (isTouchDevice ? "📄" : "📄")}
+            </button>
+          )}
+
           {/* 連線按鈕 */}
           {!isConnecting && (
             <button
@@ -285,6 +348,22 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
           </button>
         </div>
 
+        {/* 調整大小控制項 */}
+        {isSelected && !isEditing && !isConnecting && (
+          <div
+            className={`absolute bottom-0 right-0 ${
+              isTouchDevice ? "w-5 h-5" : "w-3 h-3"
+            } cursor-nw-resize opacity-60 hover:opacity-100 z-10`}
+            onMouseDown={handleResizeStart}
+            onTouchStart={handleResizeTouchStart}
+            style={{
+              background: 'linear-gradient(-45deg, transparent 30%, #666 30%, #666 50%, transparent 50%)',
+              borderBottomRightRadius: '6px',
+            }}
+            title="拖拽調整大小"
+          />
+        )}
+
         {/* 內容區域 */}
         <div className={`${isTouchDevice ? "p-3 pt-8" : "p-4 pt-6"} h-full`}>
           {isEditing ? (
@@ -295,13 +374,13 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
               onBlur={handleContentSubmit}
               onKeyDown={handleKeyDown}
               onPointerDown={(e) => e.stopPropagation()}
-              className={`w-full h-full resize-none border-none outline-none bg-transparent text-gray-700 ${
+              className={`w-full h-full resize-none border-none outline-none bg-transparent text-gray-800 ${
                 isTouchDevice ? "text-base" : "text-sm"
               }`}
               placeholder={
                 isTouchDevice
-                  ? "點擊編輯內容..."
-                  : "輸入內容... (Ctrl+Enter 儲存, Esc 取消)"
+                  ? "支援 Markdown 語法：\n# 標題\n**粗體** *斜體*\n- 列表項目\n[連結](url)\n```程式碼```"
+                  : "支援 Markdown 語法：# 標題 **粗體** *斜體* - 列表 [連結](url) ```程式碼```\n(Ctrl+Enter 儲存, Esc 取消)"
               }
               style={{
                 touchAction: "manipulation",
@@ -310,7 +389,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
             />
           ) : (
             <div
-              className={`w-full h-full cursor-text whitespace-pre-wrap text-gray-700 ${
+              className={`w-full h-full cursor-text overflow-auto sticky-note-content ${
                 isTouchDevice ? "text-base" : "text-sm"
               }`}
               onDoubleClick={handleDoubleClick}
@@ -326,8 +405,31 @@ export const StickyNote: React.FC<StickyNoteProps> = ({
                 setLastTap(now);
               }}
             >
-              {note.content ||
-                (isTouchDevice ? "點擊兩次編輯內容..." : "雙擊編輯內容...")}
+              {note.content ? (
+                showMarkdown ? (
+                  <div className="markdown-content text-gray-800 h-full">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw]}
+                    >
+                      {note.content}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="whitespace-pre-wrap text-gray-800 h-full overflow-auto sticky-note-content">
+                    {note.content}
+                  </div>
+                )
+              ) : (
+                <div className="text-gray-500 italic text-center h-full flex flex-col items-center justify-center">
+                  <div className="mb-1">
+                    {isTouchDevice ? "點擊兩次編輯內容" : "雙擊編輯內容"}
+                  </div>
+                  <div className="text-xs opacity-75">
+                    支援 Markdown 語法 📝
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
