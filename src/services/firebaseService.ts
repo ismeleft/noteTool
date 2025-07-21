@@ -24,6 +24,12 @@ export interface UserData {
   userId: string;
 }
 
+interface NetworkInformation {
+  effectiveType?: string;
+  downlink?: number;
+  rtt?: number;
+}
+
 class FirebaseService {
   private currentUser: User | null = null;
   private unsubscribe: (() => void) | null = null;
@@ -60,12 +66,12 @@ class FirebaseService {
     }
     
     const maxRetries = 3;
-    let lastError: any;
+    let lastError: Error | null = null;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`嘗試匿名登入... (${attempt}/${maxRetries})`);
-        const result = await signInAnonymously(auth);
+        const result = await signInAnonymously(auth!);
         this.currentUser = result.user;
         console.log(`匿名登入成功 (嘗試 ${attempt}/${maxRetries})`, {
           uid: result.user.uid,
@@ -73,8 +79,11 @@ class FirebaseService {
         });
         return result.user;
       } catch (error: unknown) {
-        lastError = error;
-        const errorData = error instanceof Error && 'code' in error ? error as any : { code: 'unknown', message: String(error) };
+        lastError = error instanceof Error ? error : new Error(String(error));
+        interface FirebaseError extends Error {
+          code: string;
+        }
+        const errorData = error instanceof Error && 'code' in error ? error as FirebaseError : { code: 'unknown', message: String(error) };
         console.warn(`匿名登入失敗 (嘗試 ${attempt}/${maxRetries}):`, {
           code: errorData?.code || 'unknown',
           message: errorData?.message || String(error),
@@ -95,18 +104,21 @@ class FirebaseService {
     }
     
     // 記錄詳細的診斷信息
-    const errorData = lastError instanceof Error && 'code' in lastError ? lastError as any : { code: 'unknown', message: String(lastError) };
+    interface FirebaseError extends Error {
+      code: string;
+    }
+    const errorData = lastError && lastError instanceof Error && 'code' in lastError ? lastError as FirebaseError : { code: 'unknown', message: String(lastError) };
     const errorInfo = {
       error: {
         code: errorData?.code || 'unknown',
         message: errorData?.message || 'unknown error',
-        stack: errorData?.stack,
+        stack: errorData && 'stack' in errorData ? errorData.stack : undefined,
         fullError: lastError
       },
       environment: {
         userAgent: navigator.userAgent,
         online: navigator.onLine,
-        connection: (navigator as any).connection,
+        connection: 'connection' in navigator ? (navigator as Navigator & { connection?: NetworkInformation }).connection : undefined,
         timestamp: new Date().toISOString()
       },
       config: {
@@ -124,7 +136,7 @@ class FirebaseService {
       throw new Error(errorMessage);
     }
     
-    throw lastError;
+    throw lastError || new Error('Unknown authentication error');
   }
 
   // 獲取當前用戶
@@ -144,7 +156,7 @@ class FirebaseService {
         return;
       }
 
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const unsubscribe = onAuthStateChanged(auth!, (user) => {
         if (user) {
           unsubscribe();
           resolve(user);
@@ -172,7 +184,7 @@ class FirebaseService {
 
     try {
       const user = await this.waitForAuth();
-      const userDoc = doc(db, 'users', user.uid);
+      const userDoc = doc(db!, 'users', user.uid);
       
       await setDoc(userDoc, {
         ...data,
@@ -193,7 +205,7 @@ class FirebaseService {
     
     try {
       const user = await this.waitForAuth();
-      const userDoc = doc(db, 'users', user.uid);
+      const userDoc = doc(db!, 'users', user.uid);
       const docSnap = await getDoc(userDoc);
       
       if (docSnap.exists()) {
@@ -216,7 +228,7 @@ class FirebaseService {
     }
 
     this.waitForAuth().then((user) => {
-      const userDoc = doc(db, 'users', user.uid);
+      const userDoc = doc(db!, 'users', user.uid);
       
       this.unsubscribe = onSnapshot(userDoc, (doc) => {
         if (doc.exists()) {

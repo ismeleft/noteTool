@@ -157,7 +157,7 @@ export const useCanvasStateWithSync = () => {
     }, 2000);
 
     return () => clearTimeout(syncTimer);
-  }, [state.themes, state.currentThemeId, state.notes, state.connections, syncData]);
+  }, [state.themes, state.currentThemeId, state.notes, state.connections, state, syncData]);
 
   // Canvas操作函數（保持原有邏輯）
   const addNote = useCallback((position: { x: number; y: number }) => {
